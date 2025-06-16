@@ -1,0 +1,158 @@
+local player = game.Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+local replicatedStorage = game:GetService("ReplicatedStorage")
+local towersFolder = replicatedStorage:WaitForChild("Resources"):WaitForChild("Towers")
+
+local selectedTowerName = nil
+
+
+local toggleButton = Instance.new("TextButton", playerGui)
+toggleButton.Size = UDim2.new(0, 120, 0, 40)
+toggleButton.Position = UDim2.new(0, 20, 0.7, 0)
+toggleButton.Text = "Toggle Tower UI"
+toggleButton.Font = Enum.Font.SourceSansBold
+toggleButton.TextSize = 20
+toggleButton.BackgroundColor3 = Color3.fromRGB(80, 80, 120)
+toggleButton.TextColor3 = Color3.new(1, 1, 1)
+
+
+local screenGui = Instance.new("ScreenGui", playerGui)
+screenGui.Name = "TowerDropdownUI"
+screenGui.ResetOnSpawn = false
+
+local mainFrame = Instance.new("Frame", screenGui)
+mainFrame.Size = UDim2.new(0, 280, 0, 370)
+mainFrame.Position = UDim2.new(0, 30, 0.3, 0)
+mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+mainFrame.BorderSizePixel = 0
+mainFrame.Active = true
+mainFrame.Draggable = true
+mainFrame.Visible = true
+
+toggleButton.MouseButton1Click:Connect(function()
+	mainFrame.Visible = not mainFrame.Visible
+end)
+
+
+local title = Instance.new("TextLabel", mainFrame)
+title.Size = UDim2.new(0.6, 0, 0, 40)
+title.Text = "📦 Tower Spawner"
+title.Font = Enum.Font.SourceSansBold
+title.TextSize = 22
+title.TextColor3 = Color3.new(1, 1, 1)
+title.BackgroundTransparency = 1
+title.Position = UDim2.new(0, 5, 0, 0)
+
+
+local spawnButton = Instance.new("TextButton", mainFrame)
+spawnButton.Size = UDim2.new(0.35, -10, 0, 30)
+spawnButton.Position = UDim2.new(0.65, 5, 0, 5)
+spawnButton.Text = "🚀 Spawn"
+spawnButton.Font = Enum.Font.SourceSansBold
+spawnButton.TextSize = 18
+spawnButton.BackgroundColor3 = Color3.fromRGB(80, 130, 80)
+spawnButton.TextColor3 = Color3.new(1, 1, 1)
+
+spawnButton.MouseButton1Click:Connect(function()
+	if not selectedTowerName then return end
+	local character = player.Character or player.CharacterAdded:Wait()
+	local root = character:WaitForChild("HumanoidRootPart")
+	local spawnPos = root.Position - (root.CFrame.LookVector * 5)
+
+	local args = {
+		selectedTowerName,
+		CFrame.new(spawnPos),
+		"2938044509_0"
+	}
+
+	replicatedStorage:WaitForChild("Packages")
+		:WaitForChild("_Index")
+		:WaitForChild("sleitnick_knit@1.5.1")
+		:WaitForChild("knit")
+		:WaitForChild("Services")
+		:WaitForChild("TowerService")
+		:WaitForChild("RF")
+		:WaitForChild("PlaceTower")
+		:InvokeServer(unpack(args))
+end)
+
+
+local searchBox = Instance.new("TextBox", mainFrame)
+searchBox.Size = UDim2.new(1, -10, 0, 30)
+searchBox.Position = UDim2.new(0, 5, 0, 45)
+searchBox.PlaceholderText = "🔎 Search Tower..."
+searchBox.Text = ""
+searchBox.Font = Enum.Font.SourceSans
+searchBox.TextSize = 18
+searchBox.TextColor3 = Color3.new(1, 1, 1)
+searchBox.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+searchBox.BorderSizePixel = 0
+
+-- Selected Tower Label
+local selectedTowerLabel = Instance.new("TextLabel", mainFrame)
+selectedTowerLabel.Size = UDim2.new(1, 0, 0, 20)
+selectedTowerLabel.Position = UDim2.new(0, 0, 0, 80)
+selectedTowerLabel.Text = "Selected: None"
+selectedTowerLabel.Font = Enum.Font.SourceSans
+selectedTowerLabel.TextSize = 16
+selectedTowerLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+selectedTowerLabel.BackgroundTransparency = 1
+
+
+local scrollFrame = Instance.new("ScrollingFrame", mainFrame)
+scrollFrame.Size = UDim2.new(1, -10, 0, 260)
+scrollFrame.Position = UDim2.new(0, 5, 0, 105)
+scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+scrollFrame.ScrollBarThickness = 6
+scrollFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+scrollFrame.BorderSizePixel = 0
+
+local layout = Instance.new("UIListLayout", scrollFrame)
+layout.Padding = UDim.new(0, 5)
+
+-- Filter and List Towers
+local function getFilteredTowers(query)
+	local list = {}
+	for _, tower in ipairs(towersFolder:GetChildren()) do
+		if tower:IsA("Model") and (query == "" or string.find(string.lower(tower.Name), string.lower(query))) then
+			table.insert(list, tower.Name)
+		end
+	end
+	table.sort(list)
+	return list
+end
+
+local function refreshList(query)
+	for _, child in ipairs(scrollFrame:GetChildren()) do
+		if child:IsA("Frame") then child:Destroy() end
+	end
+
+	local towers = getFilteredTowers(query or "")
+	for _, towerName in ipairs(towers) do
+		local frame = Instance.new("Frame", scrollFrame)
+		frame.Size = UDim2.new(1, 0, 0, 45)
+		frame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+		frame.BorderSizePixel = 0
+
+		local nameBtn = Instance.new("TextButton", frame)
+		nameBtn.Size = UDim2.new(1, 0, 1, 0)
+		nameBtn.Text = towerName
+		nameBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+		nameBtn.TextColor3 = Color3.new(1,1,1)
+		nameBtn.Font = Enum.Font.SourceSansBold
+		nameBtn.TextSize = 16
+		nameBtn.BorderSizePixel = 0
+
+		nameBtn.MouseButton1Click:Connect(function()
+			selectedTowerName = towerName
+			selectedTowerLabel.Text = "Selected: " .. towerName
+		end)
+	end
+	scrollFrame.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y)
+end
+
+searchBox:GetPropertyChangedSignal("Text"):Connect(function()
+	refreshList(searchBox.Text)
+end)
+
+refreshList("")
